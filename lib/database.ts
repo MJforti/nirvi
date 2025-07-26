@@ -20,6 +20,18 @@ export async function getProducts(): Promise<Product[]> {
   return data || []
 }
 
+// Helper function to map database product to component format
+export function mapDatabaseToComponent(dbProduct: Product) {
+  return {
+    id: dbProduct.id,
+    name: dbProduct.name,
+    price: dbProduct.price,
+    image: dbProduct.image_url,
+    category: dbProduct.category,
+    isNew: dbProduct.is_new,
+  }
+}
+
 export async function getProductById(id: number): Promise<Product | null> {
   const { data, error } = await supabase
     .from('products')

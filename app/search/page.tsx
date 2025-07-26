@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation"
 import { useEffect, useState, Suspense } from "react"
 import { Search } from "lucide-react"
 import { ProductGrid } from "@/components/product-grid"
-import { searchProducts } from "@/lib/database"
+import { searchProducts, mapDatabaseToComponent } from "@/lib/database"
 
 function SearchResults() {
   const searchParams = useSearchParams()
@@ -25,7 +25,8 @@ function SearchResults() {
         setLoading(true)
         setError(null)
         const results = await searchProducts(query)
-        setProducts(results)
+        const mappedResults = results.map(mapDatabaseToComponent)
+        setProducts(mappedResults)
       } catch (err) {
         console.error("Search error:", err)
         setError("Failed to search products. Please try again.")
