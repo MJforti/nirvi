@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Menu, Search, ShoppingCart, User, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +11,30 @@ import { useCart } from "@/components/cart-provider"
 
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   const { totalItems } = useCart()
   const cartItemCount = totalItems
+  const router = useRouter()
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      // Escape to close search
+      if (e.key === "Escape" && isSearchOpen) {
+        setIsSearchOpen(false)
+        setSearchQuery("")
+      }
+      
+      // Ctrl/Cmd + K to open search
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault()
+        setIsSearchOpen(true)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeydown)
+    return () => document.removeEventListener("keydown", handleKeydown)
+  }, [isSearchOpen])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -71,17 +94,56 @@ export function Header() {
 
         <div className="ml-auto flex items-center gap-2">
           {isSearchOpen ? (
-            <div className="relative flex items-center">
-              <Input type="search" placeholder="Search products..." className="w-[200px] md:w-[300px]" autoFocus />
-              <Button variant="ghost" size="icon" className="absolute right-0" onClick={() => setIsSearchOpen(false)}>
+            <form 
+              className="relative flex items-center"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (searchQuery.trim()) {
+                  router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+                  setIsSearchOpen(false)
+                  setSearchQuery("")
+                }
+              }}
+            >
+              <Input 
+                type="search" 
+                placeholder="Search products..." 
+                className="w-[200px] md:w-[300px]" 
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Button 
+                type="submit"
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-0"
+                disabled={!searchQuery.trim()}
+              >
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Search</span>
+              </Button>
+              <Button 
+                type="button"
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-8" 
+                onClick={() => {
+                  setIsSearchOpen(false)
+                  setSearchQuery("")
+                }}
+              >
                 <X className="h-4 w-4" />
                 <span className="sr-only">Close search</span>
               </Button>
-            </div>
+            </form>
           ) : (
             <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(true)}>
               <Search className="h-5 w-5" />
               <span className="sr-only">Search</span>
+              <span className="absolute -bottom-1 -right-1 text-[8px] text-muted-foreground bg-background px-1 rounded">
+                ⌘K
+              </span>
             </Button>
           )}
 
