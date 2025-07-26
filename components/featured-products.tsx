@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
@@ -7,43 +8,64 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
-
-const products = [
-  {
-    id: 4,
-    name: "Customised Laptop Sleeve",
-    price: 600,
-    image: "customised_laptop_sleeve_4.jpg",
-    category: "denim",
-    isNew: false,
-  },
-  {
-    id: 10,
-    name: "Lace Bracelet",
-    price: 150,
-    image: "lace_bracelet_10.jpg",
-    category: "wool",
-    isNew: false,
-  },
-  {
-  id: 13,
-  name: "No pocket denim tote bag",
-  price: 400,
-  image: "no_pocket_denim_tote_bag_13.jpg",
-  category: "denim",
-  isNew: true,
-  },
-  {
-    id: 5,
-    name: "Keychain",
-    price: 100,
-    image: "keychain_5.jpg",
-    category: "denim",
-    isNew: true,
-  },
-]
+import { getFeaturedProducts, mapDatabaseToComponent } from "@/lib/database"
 
 export function FeaturedProducts() {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchFeaturedProducts() {
+      try {
+        setLoading(true)
+        setError(null)
+        const results = await getFeaturedProducts()
+        const mappedResults = results.map(mapDatabaseToComponent)
+        setProducts(mappedResults)
+      } catch (err) {
+        console.error("Error fetching featured products:", err)
+        setError("Failed to load featured products.")
+        setProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFeaturedProducts()
+  }, [])
+
+  if (loading) {
+    return (
+      <section className="space-y-6">
+        <div className="flex flex-col items-center text-center space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Featured Products</h2>
+          <p className="text-muted-foreground max-w-[600px]">Loading featured products...</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="aspect-square bg-muted rounded-lg mb-4"></div>
+              <div className="h-4 bg-muted rounded mb-2"></div>
+              <div className="h-4 bg-muted rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="space-y-6">
+        <div className="flex flex-col items-center text-center space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Featured Products</h2>
+          <p className="text-muted-foreground max-w-[600px]">{error}</p>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
@@ -59,7 +81,7 @@ export function FeaturedProducts() {
   )
 }
 
-function ProductCard({ product }) {
+function ProductCard({ product }: { product: any }) {
   const { addToCart } = useCart()
 
   return (

@@ -1,146 +1,94 @@
-import { ProductGrid } from "@/components/product-grid";
-import { notFound } from "next/navigation";
+"use client"
 
-const products = [
-  {
-    id: 1,
-    name: "Plain Tote Bag",
-    price: 200,
-    image: "/plain_tote_1.jpg",
-    category: "denim",
-    isNew: true,
-    description: "A simple, stylish tote bag made from upcycled denim.",
-  },
-  {
-    id: 2,
-    name: "Double pocket customized denim tote",
-    price: 600,
-    image: "/double_pocket_customized_denim_tote_bag_2.jpg",
-    category: "denim",
-    isNew: true,
-    description: "A tote bag with custom embroidery and patches.",
-  },
-  {
-    id: 3,
-    name: "Laptop Sleeve",
-    price: 350,
-    image: "/laptop_sleeve_3.jpg",
-    category: "denim",
-    isNew: true,
-    description: "Protect your laptop in style with this upcycled denim sleeve.",
-  },
-  {
-    id: 4,
-    name: "Customised Laptop Sleeve",
-    price: 600,
-    image: "/customised_laptop_sleeve_4.jpg",
-    category: "denim",
-    isNew: false,
-    description: "A laptop sleeve with unique customizations.",
-  },
-  {
-    id: 5,
-    name: "Keychain",
-    price: 100,
-    image: "/keychain_5.jpg",
-    category: "denim",
-    isNew: true,
-    description: "A fun, upcycled denim keychain.",
-  },
-  {
-    id: 6,
-    name: "Watermelon Bag Charm",
-    price: 70,
-    image: "/watermelon_bag_charm_6.jpg",
-    category: "wool",
-    isNew: false,
-    description: "A colorful wool bag charm.",
-  },
-  {
-    id: 7,
-    name: "Pouch",
-    price: 150,
-    image: "/pouch_7.jpg",
-    category: "denim",
-    isNew: true,
-    description: "A handy pouch made from upcycled denim.",
-  },
-  {
-    id: 8,
-    name: "Wool Bracelet",
-    price: 100,
-    image: "/wool_bracelet_8.jpg",
-    category: "wool",
-    isNew: false,
-    description: "A soft, stylish wool bracelet.",
-  },
-  {
-    id: 9,
-    name: "Bead Bracelet",
-    price: 100,
-    image: "/bead_bracelet_9.jpg",
-    category: "wool",
-    isNew: true,
-    description: "A beaded bracelet with wool accents.",
-  },
-  {
-    id: 10,
-    name: "Lace Bracelet",
-    price: 150,
-    image: "/lace_bracelet_10.jpg",
-    category: "accessories",
-    isNew: false,
-    description: "A delicate lace and wool bracelet.",
-  },
-  {
-      id: 11,
-      name: "Double pocket denim tote bag",
-      price: 250,
-      image: "/double_pocket_denim_tote_bag_11.jpg",
-      category: "denim",
-      isNew: true,
-    description: "A delicate lace and wool bracelet.",
-  },
-  {
-    id: 12,
-    name: "Sunflower bag charms",
-    price: 600,
-    image: "/sunflower_bag_charms_12.jpg",
-    category: "wool",
-    isNew: true,
-    description: "A delicate lace and wool bracelet.",
-  },
-  {
-    id: 13,
-    name: "No pocket denim tote bag",
-    price: 400,
-    image: "/no_pocket_denim_tote_bag_13.jpg",
-    category: "denim",
-    isNew: true,
-    description: "A delicate lace and wool bracelet.",
-  },
-];
+import { useEffect, useState } from "react"
+import { ProductGrid } from "@/components/product-grid"
+import { notFound } from "next/navigation"
+import { getProducts, getProductsByCategory, getProductById, mapDatabaseToComponent } from "@/lib/database"
 
 export default function SlugPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+  const { slug } = params
+  const [products, setProducts] = useState<any[]>([])
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Try to match as a category
-  const filteredProducts = products.filter(
-    (product) => product.category === slug
-  );
-  if (filteredProducts.length > 0) {
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // First try to match as a category
+        const categoryProducts = await getProductsByCategory(slug)
+        if (categoryProducts.length > 0) {
+          const mappedProducts = categoryProducts.map(mapDatabaseToComponent)
+          setProducts(mappedProducts)
+          setLoading(false)
+          return
+        }
+
+        // If no category match, try to match as a product id
+        const productId = parseInt(slug)
+        if (!isNaN(productId)) {
+          const singleProduct = await getProductById(productId)
+          if (singleProduct) {
+            const mappedProduct = mapDatabaseToComponent(singleProduct)
+            setProduct(mappedProduct)
+            setLoading(false)
+            return
+          }
+        }
+
+        // If neither category nor product found
+        setLoading(false)
+        setError("Not found")
+      } catch (err) {
+        console.error("Error fetching data:", err)
+        setError("Failed to load data. Please try again.")
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [slug])
+
+  if (loading) {
+    return (
+      <div className="container px-4 py-12 mx-auto">
+        <div className="flex flex-col items-center text-center space-y-4">
+          <h1 className="text-3xl font-bold tracking-tight">Loading...</h1>
+          <p className="text-muted-foreground">Please wait while we load the content.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error === "Not found") {
+    return notFound()
+  }
+
+  if (error) {
+    return (
+      <div className="container px-4 py-12 mx-auto">
+        <div className="flex flex-col items-center text-center space-y-4">
+          <h1 className="text-3xl font-bold tracking-tight">Error</h1>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If we have category products
+  if (products.length > 0) {
     return (
       <div className="container px-4 py-12 mx-auto">
         <h1 className="text-3xl font-bold mb-8 capitalize">{slug} Collection</h1>
-        <ProductGrid products={filteredProducts} />
+        <ProductGrid products={products} />
       </div>
-    );
+    )
   }
 
-  // Try to match as a product id
-  const product = products.find(
-    (product) => product.id.toString() === slug
-  );
+  // If we have a single product
   if (product) {
     return (
       <div className="container px-4 py-12 mx-auto">
@@ -155,14 +103,13 @@ export default function SlugPage({ params }: { params: { slug: string } }) {
           <div className="w-full md:w-1/2 flex flex-col gap-4">
             <h1 className="text-3xl font-bold">{product.name}</h1>
             <p className="text-2xl font-bold mt-2">₹{product.price.toFixed(2)}</p>
-            <p className="text-muted-foreground">{product.description}</p>
+            <p className="text-muted-foreground">{product.description || "No description available."}</p>
             {/* Add more product details here if needed */}
           </div>
         </div>
       </div>
-    );
+    )
   }
 
-  // Not found
-  return notFound();
+  return notFound()
 } 
