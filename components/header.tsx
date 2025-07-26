@@ -10,8 +10,8 @@ import { useCart } from "@/components/cart-provider"
 
 export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const { cartItems } = useCart()
-  const cartItemCount = cartItems.length
+  const { totalItems } = useCart()
+  const cartItemCount = totalItems
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">

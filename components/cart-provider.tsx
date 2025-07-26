@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { createContext, useContext, useState, useEffect } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 type Product = {
   id: number
@@ -28,6 +29,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<Product[]>([])
+  const { toast } = useToast()
 
   // Load cart from localStorage on client side
   useEffect(() => {
@@ -53,17 +55,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const existingItem = prevItems.find((item) => item.id === product.id)
 
       if (existingItem) {
+        const newQuantity = (existingItem.quantity || 1) + 1
+        toast({
+          title: "Item Updated",
+          description: `${product.name} quantity updated to ${newQuantity}`,
+        })
         return prevItems.map((item) =>
-          item.id === product.id ? { ...item, quantity: (item.quantity || 1) + 1 } : item,
+          item.id === product.id ? { ...item, quantity: newQuantity } : item,
         )
       } else {
+        toast({
+          title: "Added to Cart",
+          description: `${product.name} has been added to your cart`,
+        })
         return [...prevItems, { ...product, quantity: 1 }]
       }
     })
   }
 
   const removeFromCart = (productId: number) => {
+    const itemToRemove = cartItems.find((item) => item.id === productId)
+    
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId))
+
+    if (itemToRemove) {
+      toast({
+        title: "Item Removed",
+        description: `${itemToRemove.name} has been removed from your cart`,
+      })
+    }
 
     // If cart is empty after removal, clear localStorage
     if (cartItems.length === 1) {
@@ -80,6 +100,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => {
     setCartItems([])
     localStorage.removeItem("cart")
+    toast({
+      title: "Cart Cleared",
+      description: "All items have been removed from your cart",
+    })
   }
 
   const totalItems = cartItems.reduce((total, item) => total + (item.quantity || 1), 0)
